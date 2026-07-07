@@ -1600,7 +1600,7 @@
   width: 100%;
 }
 
-/* Sidebar Styling Rules Container */
+/* Sidebar Styling */
 .portal-sidebar {
   width: 260px;
   background-color: #f8fafc;
@@ -1889,8 +1889,13 @@
   align-items: flex-start;
 }
 
-.flex-1 { flex: 1; }
-.flex-2 { flex: 1.8; }
+.flex-1 { 
+  flex: 1; 
+}
+
+.flex-2 { 
+  flex: 1.8; 
+}
 
 .panel-deck-card {
   background: #ffffff;
@@ -1923,7 +1928,7 @@
   font-family: 'Montserrat', sans-serif;
 }
 
-/* Listing Administration Custom Table Layout */
+/* Listing Administration Table Layout */
 .table-responsive-container {
   overflow-x: auto;
   width: 100%;
@@ -2028,7 +2033,7 @@
   text-align: center !important; 
 }
 
-/* Inquiries Message Stream Feeds */
+/* Inquiries Messages styles */
 .inquiry-stream-stack {
   display: flex;
   flex-direction: column;
