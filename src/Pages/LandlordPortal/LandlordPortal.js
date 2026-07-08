@@ -1,14 +1,10 @@
 import React from "react";
 import { FaArrowTrendUp, FaRegMoneyBill1, FaRegEyeSlash, FaArrowRight, FaHouseChimney, } from "react-icons/fa6";
-import { TbMessage, TbLayoutDashboard} from "react-icons/tb";
+import { TbMessage } from "react-icons/tb";
 import { IoEyeOutline, IoReload} from "react-icons/io5";
 import { RxEnvelopeClosed } from "react-icons/rx";
 import { GiCheckMark } from "react-icons/gi";
-import { FiClipboard } from "react-icons/fi";
-import { AiOutlineMessage } from "react-icons/ai";
-import { LuShieldCheck } from "react-icons/lu";
-import { IoMdSettings } from "react-icons/io";
-import { GoSignOut } from "react-icons/go";
+import Sidebar from "../../Components/AdminSideBar/sidebar";
 
 
 const propertiesData = [
@@ -72,55 +68,11 @@ const inquiriesData = [
 ];
 
 function LandlordDashboard() {
+
   return (
     <div className="dashboard-root">
       <div className="dashboard-layout-container">
-        {/* Left Hand Sidebar Navigation Panel */}
-        <aside className="portal-sidebar">
-          <div className="sidebar-top-branding">
-            <span className="sidebar-brand-subtitle">Landlord Portal</span>
-          </div>
-
-          <nav className="sidebar-navigation">
-            <a href="#dashboard" className="sidebar-nav-item active">
-              <TbLayoutDashboard className="nav-icon" />
-              Dashboard
-            </a>
-            <a href="#listings" className="sidebar-nav-item">
-              <FiClipboard className="nav-icon" />
-              My Listings
-            </a>
-            <a href="#inquiries" className="sidebar-nav-item label-dot-wrapper">
-              <AiOutlineMessage className="nav-icon" />
-              Student Inquiries
-              <span className="notification-red-dot"></span>
-            </a>
-            <a href="#verification" className="sidebar-nav-item">
-              <LuShieldCheck className="nav-icon" />
-              Verification Status
-            </a>
-
-            <hr className="sidebar-menu-divider" />
-
-            <a href="#settings" className="sidebar-nav-item text-secondary">
-              <IoMdSettings className="nav-icon" />
-              Settings
-            </a>
-            <a href="#logout" className="sidebar-nav-item text-danger">
-              <GoSignOut className="nav-icon" />
-              Sign Out
-            </a>
-          </nav>
-
-          <div className="sidebar-profile-footer-box">
-            <div className="profile-avatar-circle">JK</div>
-            <div className="profile-identity-details">
-              <p className="profile-user-fullname">John Kamau</p>
-              <span className="profile-badge-pill-verified"><GiCheckMark /> VERIFIED</span>
-            </div>
-          </div>
-        </aside>
-
+        <Sidebar />
         {/* Right Hand Dynamic Content Frame Workspace */}
         <main className="portal-content-workspace">
           
