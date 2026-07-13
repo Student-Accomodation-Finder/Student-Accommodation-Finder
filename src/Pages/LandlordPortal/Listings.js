@@ -1,47 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaArrowTrendUp, FaRegMoneyBill1, FaArrowRight, FaHouseChimney, } from "react-icons/fa6";
-import { TbMessage } from "react-icons/tb";
-import { IoEyeOutline } from "react-icons/io5";
-import { RxEnvelopeClosed } from "react-icons/rx";
-
 import Sidebar from "../../Components/AdminSideBar/sidebar";
 import { Link } from "react-router-dom";
+import { FaPencilAlt } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
+import { Button } from "@mui/material";
 
-const inquiriesData = [
-  {
-    id: 1,
-    initials: "SM",
-    name: "Sarah Mwangi",
-    time: "2 hours ago",
-    message: '"Hi! Is the Pine Breeze studio still available for next semester? I\'d like..."',
-    property: "Pine Breeze Apartments",
-    bgColor: "#fef3c7",
-    textColor: "#d97706"
-  },
-  {
-    id: 2,
-    initials: "KO",
-    name: "Kevin Otieno",
-    time: "5 hours ago",
-    message: '"Does the price include water and electricity?"',
-    property: "Green Valley Studio",
-    bgColor: "#dbeafe",
-    textColor: "#1d4ed8"
-  },
-  {
-    id: 3,
-    initials: "AN",
-    name: "Alice Njeri",
-    time: "Yesterday",
-    message: '"I am a female student looking for a shared room. Are there other female..."',
-    property: "Pine Breeze Apartments",
-    bgColor: "#d1fae5",
-    textColor: "#065f46"
-  }
-];
-
-function LandlordDashboard({ handleLogout }) {
+function Listings({ handleLogout }) {
 
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +16,7 @@ function LandlordDashboard({ handleLogout }) {
     const fetchProperties = async () => {
       try {
         setIsLoading(true);
-        // Calling active Node.js backend routing port
+        // Calling your active Node.js backend routing port
         const response = await axios.get("http://localhost:4000/api/properties");
         
         if (response.data.success) {
@@ -67,6 +32,26 @@ function LandlordDashboard({ handleLogout }) {
 
     fetchProperties();
   }, []);
+
+    // Handler to safely remove a property listing from the backend and frontend state
+    const handleDelete = async (propertyId) => {
+        if (window.confirm("Are you sure you want to permanently delete this property listing?")) {
+            try {
+            const response = await axios.delete(`http://localhost:4000/api/properties/${propertyId}`);
+            
+            if (response.data.success) { 
+                alert("Property listing successfully deleted.");
+                // Filter out the deleted property from state so the UI updates immediately without a page reload
+                setProperties((prevProperties) => 
+                prevProperties.filter((property) => property._id !== propertyId)
+                );
+            }
+            } catch (err) {
+            console.error("Error deleting property:", err);
+            alert(err.response?.data?.error || "Server error occurred while attempting to delete this listing.");
+            }
+        }
+    };
 
   const getActiveUtilities = (amenities = {}) => {
     const labels = {
@@ -91,12 +76,12 @@ function LandlordDashboard({ handleLogout }) {
   return (
     <div className="dashboard-root">
       <div className="dashboard-layout-container">
-        <Sidebar handleLogout={handleLogout} />
+        <Sidebar handleLogout={handleLogout}/>
         <main className="portal-content-workspace">
           <div className="workspace-header-row">
             <div className="header-greeting-block">
-              <h2 className="welcome-heading-text">Welcome</h2>
-              <p className="welcome-subtitle-text">Manage your properties and stay updated on student inquiries.</p>
+              <h2 className="welcome-heading-text">All Listings</h2>
+              <p className="welcome-subtitle-text">Manage your properties seamlessly.</p>
             </div>
             <Link to='/add-listing' style={{ textDecoration: 'none', borderBottom: 'none' }}>
               <button className="add-listing-action-btn">
@@ -105,43 +90,10 @@ function LandlordDashboard({ handleLogout }) {
             </Link>
           </div>
 
-          {/* Matrix Top Card Row */}
-          <div className="metrics-cards-grid">
-            <div className="metric-data-card">
-              <div className="metric-card-top-line">
-                <div className="metric-icon-box-view"><IoEyeOutline /></div>
-                <span className="metric-percentage-label-view">+12% <FaArrowTrendUp className="metric-percentage-label-view-arrow"/></span>
-              </div>
-              <p className="metric-card-data-heading">Total Views</p>
-              <h3 className="metric-card-grand-total">1,248</h3>
-            </div>
-
-            <div className="metric-data-card">
-              <div className="metric-card-top-line">
-                <div className="metric-icon-box-inquiry"><TbMessage /></div>
-                <span className="metric-percentage-label-inquiry">+5 <RxEnvelopeClosed className="metric-percentage-label-inquiry-icon" /></span>
-              </div>
-              <p className="metric-card-data-heading">Active Inquiries</p>
-              <h3 className="metric-card-grand-total">24</h3>
-            </div>
-
-            <div className="metric-data-card">
-              <div className="metric-card-top-line">
-                <div className="metric-icon-box-revenue"><FaRegMoneyBill1 /></div>
-                <span className="metric-percentage-label-revenue">KES / mo</span>
-              </div>
-              <p className="metric-card-data-heading">Est. Monthly Revenue</p>
-              <h3 className="metric-card-grand-total">145,000</h3>
-            </div>
-          </div>
-
-          {/* Bottom Side-by-Side Deck Layout */}
           <div className="workspace-dual-deck-row">
-            {/* Left Side: Property Management List */}
             <div className="panel-deck-card flex-2">
               <div className="panel-deck-header">
-                <h4 className="panel-deck-title">My Listings</h4>
-                <Link to='/all-listings' className="panel-deck-action-link">View All</Link>
+                <h4 className="panel-deck-title">My Listings ({properties.length})</h4>
               </div>
 
               <div className="table-responsive-container">
@@ -162,22 +114,24 @@ function LandlordDashboard({ handleLogout }) {
                     <thead>
                       <tr>
                         <th>PROPERTY</th>
+                        <th>LOCATION</th>
+                        <th>DISTANCE</th>
+                        <th>TYPE</th>
                         <th>PRICE</th>
                         <th>UTILITIES</th>
                         <th>FACILITIES</th>
+                        <th>ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {properties.slice(0,5).map((prop) => {
-                        // Dynamically mapping active database fields into text arrays
+                      {properties.map((prop) => {
                         const activeUtilities = getActiveUtilities(prop.amenities);
                         const activeFacilities = getActiveFacilities(prop.amenities);
 
                         return (
-                          <tr key={prop._id}> 
+                          <tr key={prop._id}>
                             <td>
                               <div className="table-cell-property-block">
-                                {/* Using first uploaded photo path from Cloudinary array, falling back to placeholder if null */}
                                 <img 
                                   src={prop.images && prop.images.length > 0 ? prop.images[0] : "https://via.placeholder.com/80"} 
                                   alt={prop.propertyName} 
@@ -185,8 +139,22 @@ function LandlordDashboard({ handleLogout }) {
                                 />
                                 <div className="property-cell-meta">
                                   <p className="property-cell-title">{prop.propertyName}</p>
-                                  <span className="property-cell-loc">{prop.location} • {prop.distance}</span>
                                 </div>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="property-cell-price-block">
+                                <p className="price-bold-text">{prop.location}</p>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="property-cell-price-block">
+                                <p className="price-bold-text">{prop.distance}</p>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="property-cell-price-block">
+                                <p className="price-bold-text">{prop.propertyType}</p>
                               </div>
                             </td>
                             <td>
@@ -224,6 +192,13 @@ function LandlordDashboard({ handleLogout }) {
                                 )}
                               </div>
                             </td>
+
+                            <td>
+                                <div className="actions d-flex align-items-center">
+                                    <Link to = {`/edit-property/${prop._id}`}><Button className="success" color='success'><FaPencilAlt /></Button></Link>
+                                    <Button className="error" color='error' onClick={() => handleDelete(prop._id)} ><MdDelete /></Button>
+                                </div>
+                            </td>
                           </tr>
                         );
                       })}
@@ -232,38 +207,6 @@ function LandlordDashboard({ handleLogout }) {
                 )}
               </div>
             </div>
-
-            {/* Right Side: Interactive Inquiry Activity Stream */}
-            <div className="panel-deck-card flex-1">
-              <div className="panel-deck-header">
-                <h4 className="panel-deck-title">Recent Inquiries</h4>
-              </div>
-
-              <div className="inquiry-stream-stack">
-                {inquiriesData.map((inq) => (
-                  <div key={inq.id} className="inquiry-feed-card">
-                    <div className="feed-card-header-row">
-                      <div className="feed-user-identity-block">
-                        <div className="user-initials-avatar" style={{ backgroundColor: inq.bgColor, color: inq.textColor }}>
-                          {inq.initials}
-                        </div>
-                        <div className="user-meta-title-block">
-                          <h5 className="feed-user-fullname">{inq.name}</h5>
-                          <span className="feed-timestamp-label">{inq.time}</span>
-                        </div>
-                      </div>
-                      <span className="feed-arrow-indicator"><FaArrowRight /></span>
-                    </div>
-                    <p className="feed-message-body-text">{inq.message}</p>
-                    <div className="feed-context-footer-pill">
-                      <span className="home-mini-icon"><FaHouseChimney /></span> {inq.property}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button className="view-all-inquiries-block-btn">View All Inquiries</button>
-            </div>
           </div>
         </main>
       </div>
@@ -271,4 +214,4 @@ function LandlordDashboard({ handleLogout }) {
   );
 }
 
-export default LandlordDashboard;
+export default Listings;

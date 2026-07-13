@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../../Components/AdminSideBar/sidebar";
 import { RiInformationLine, RiGraduationCapLine, RiComputerLine } from "react-icons/ri";
@@ -20,13 +20,14 @@ import { PiShieldCheckeredFill } from "react-icons/pi";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 import { IoDocumentTextOutline } from "react-icons/io5";
 
-function AddListing({ handleLogout }) {
-
+function UpdateListing({ handleLogout }) {
   const navigate = useNavigate();
+  const { id } = useParams(); // 2. Destructure the property ID from the URL path
 
   const CLOUD_NAME = "dvtwufffw"; 
   const UPLOAD_PRESET = "nestquest preset";
 
+  // Form input states 
   const [basicInfo, setBasicInfo] = useState({
     propertyName: "",
     propertyType: "Bedsitter",
@@ -61,10 +62,46 @@ function AddListing({ handleLogout }) {
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true); 
 
   const imageInputRef = useRef(null);
   const proofInputRef = useRef(null);
   const idInputRef = useRef(null);
+
+  // Fetching the existing property details when the page loads
+  useEffect(() => {
+    const fetchPropertyData = async () => {
+      try {
+        const response = await axios.get(`http://localhost:4000/api/properties/${id}`);
+        if (response.data.success) {
+          const property = response.data.data;
+          
+          // Updating the form states with existing database data
+          setBasicInfo({
+            propertyName: property.propertyName || "",
+            propertyType: property.propertyType || "Bedsitter",
+            price: property.price || "",
+            location: property.location || "",
+            distance: property.distance || "0.5km",
+            about: property.about || ""
+          });
+
+          if (property.amenities) setAmenities(property.amenities);
+          if (property.safety) setSafety(property.safety);
+          if (property.images) setImages(property.images);
+          if (property.verificationDocuments) setVerificationDocs(property.verificationDocuments);
+        }
+      } catch (error) {
+        console.error("Error loading property data:", error);
+        alert("Failed to retrieve property details. Returning to dashboard.");
+        navigate("/dashboard");
+      } finally {
+        setIsPageLoading(false);
+      }
+    };
+
+    fetchPropertyData();
+  }, [id, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -79,19 +116,16 @@ function AddListing({ handleLogout }) {
     setSafety((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Reusable direct Cloudinary upload function
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", UPLOAD_PRESET);
 
-    // Using auto permits smooth uploading for both images and PDF documents
     const endpoint = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
     const response = await axios.post(endpoint, formData);
     return response.data.secure_url;
   };
 
-  // Multiple Property Images Upload Handler
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -100,18 +134,15 @@ function AddListing({ handleLogout }) {
     try {
       const uploadPromises = files.map((file) => uploadToCloudinary(file));
       const secureUrls = await Promise.all(uploadPromises);
-
-      // Appending up to a max limit of 4 images for the preview layout array
       setImages((prev) => [...prev, ...secureUrls].slice(0, 4));
     } catch (error) {
-      alert("Failed uploading images to Cloudinary. Check your credentials.");
+      alert("Failed uploading images to Cloudinary.");
       console.error(error);
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Document Upload Handler
   const handleDocChange = async (e, fieldKey) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -120,26 +151,33 @@ function AddListing({ handleLogout }) {
     try {
       const secureUrl = await uploadToCloudinary(file);
       setVerificationDocs((prev) => ({ ...prev, [fieldKey]: secureUrl }));
-      alert("Document verified and attached successfully!");
+      alert("Document updated successfully!");
     } catch (error) {
-      alert("Failed uploading verification document.");
+      alert("Failed updating verification document.");
       console.error(error);
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Submitting collected layout to Express Endpoint
+  // Submitting updated configuration to the express PUT endpoint
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (images.length < 3) {
-      alert("Please upload at least 3 property photos (Interior, Exterior, Bathroom) before submitting.");
+      alert("Please upload at least 3 property photos before saving changes.");
       return;
     }
 
-    const listingPayload = {
-      basicInfo,
+    const updatedPayload = {
+      basicInfo: {
+        propertyName: basicInfo.propertyName,
+        propertyType: basicInfo.propertyType,
+        price: basicInfo.price,
+        location: basicInfo.location,
+        distance: basicInfo.distance,
+        about: basicInfo.about
+      },
       amenities,
       safety,
       images,
@@ -147,17 +185,26 @@ function AddListing({ handleLogout }) {
     };
 
     try {
-      // Connecting to the backend running server on port 4000
-      const response = await axios.post("http://localhost:4000/api/properties", listingPayload);
+      // Appending the target ID context
+      const response = await axios.put(`http://localhost:4000/api/properties/${id}`, updatedPayload);
       if (response.data.success) {
-        alert("Property Listing successfully submitted for admin verification!");
+        alert("Property Listing successfully updated!");
         navigate("/dashboard");
       }
     } catch (error) {
-      alert(error.response?.data?.error || "Connection refused by the host API server.");
+      alert(error.response?.data?.error || "Failed to update property records.");
       console.error(error);
     }
   };
+
+  // Rendering basic placeholder while data resolves from API
+  if (isPageLoading) {
+    return (
+      <div className="dashboard-root" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <h3>Loading Property Information...</h3>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-root">
@@ -166,10 +213,11 @@ function AddListing({ handleLogout }) {
 
         <div className="form-workspace-scrollbox">
           <div className="form-content-container">
+            
             <header className="page-heading-block">
-              <h1 className="page-main-title">Add New Property</h1>
+              <h1 className="page-main-title">Update Property Listing</h1>
               <p className="page-subtitle-desc">
-                Create a high-quality listing to attract reliable university students. All listings are reviewed for safety.
+                Modify your property specifications below. Changes will re-enter the queue for security verification.
               </p>
             </header>
 
@@ -263,7 +311,7 @@ function AddListing({ handleLogout }) {
                     <textarea 
                       name="about" 
                       rows="3"
-                      placeholder="Describe the property and exactly how to find the property from the university landmark..." 
+                      placeholder="Describe the property and directions..." 
                       value={basicInfo.about}
                       onChange={handleInputChange}
                       className="field-textarea-box"
@@ -282,83 +330,64 @@ function AddListing({ handleLogout }) {
                 </div>
 
                 <div className="amenities-split-columns">
-                  {/* Utilities Column */}
                   <div className="amenity-list-column">
                     <h3 className="column-group-caption">UTILITIES</h3>
                     
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.wifi} onChange={() => toggleAmenity("wifi")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><FaWifi /></span> Free WiFi Included
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><FaWifi /></span> Free WiFi Included</span>
                     </label>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.water} onChange={() => toggleAmenity("water")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><MdOutlineWaterDrop /></span> 24/7 Water Supply
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><MdOutlineWaterDrop /></span> 24/7 Water Supply</span>
                     </label>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.generator} onChange={() => toggleAmenity("generator")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><HiOutlineBolt /></span> Backup Power Generator
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><HiOutlineBolt /></span> Backup Power Generator</span>
                     </label>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.shower} onChange={() => toggleAmenity("shower")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><MdOutlineShower /></span> Instant Hot Shower
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><MdOutlineShower /></span> Instant Hot Shower</span>
                     </label>
                   </div>
 
-                  {/* Facilities Column */}
                   <div className="amenity-list-column">
                     <h3 className="column-group-caption">FACILITIES</h3>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.laundry} onChange={() => toggleAmenity("laundry")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><MdOutlineLocalLaundryService /></span> Shared Laundry Room
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><MdOutlineLocalLaundryService /></span> Shared Laundry Room</span>
                     </label>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.kitchenette} onChange={() => toggleAmenity("kitchenette")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><MdOutlineKitchen /></span> Kitchenette Space
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><MdOutlineKitchen /></span> Kitchenette Space</span>
                     </label>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.desk} onChange={() => toggleAmenity("desk")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><RiComputerLine /></span> Study Desk Provided
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><RiComputerLine /></span> Study Desk Provided</span>
                     </label>
 
                     <label className="checkbox-row-label">
                       <input type="checkbox" checked={amenities.balcony} onChange={() => toggleAmenity("balcony")} className="native-checkbox-input" />
                       <span className="custom-checkbox-box"></span>
-                      <span className="amenity-icon-text-row">
-                        <span className="ui-inline-icon"><MdOutlineBalcony /></span> Private Balcony
-                      </span>
+                      <span className="amenity-icon-text-row"><span className="ui-inline-icon"><MdOutlineBalcony /></span> Private Balcony</span>
                     </label>
                   </div>
                 </div>
               </div>
 
-              {/* Safety Features */}
               <div className="wizard-form-card safety-card-container">
                 <div className="card-header-row">
                   <div className="icon-badge-box orange-theme">
@@ -370,7 +399,7 @@ function AddListing({ handleLogout }) {
                 <div className="safety-info-banner">
                   <span className="banner-shield-icon"><PiShieldCheckeredFill /></span>
                   <p className="banner-message-text">
-                    Providing accurate safety information builds trust with students and guardians. Verified safety features are highlighted on your profile.
+                    Verified safety metrics remain required during alterations.
                   </p>
                 </div>
 
@@ -389,7 +418,7 @@ function AddListing({ handleLogout }) {
                     <span className="tile-custom-box"></span>
                     <div className="tile-text-content">
                       <h4 className="tile-title-header">Gated Community</h4>
-                      <p className="tile-desc-para">Secure perimeter with controlled access</p>
+                      <p className="tile-desc-para">Controlled baseline entry</p>
                     </div>
                   </div>
 
@@ -398,7 +427,7 @@ function AddListing({ handleLogout }) {
                     <span className="tile-custom-box"></span>
                     <div className="tile-text-content">
                       <h4 className="tile-title-header">Security Guard</h4>
-                      <p className="tile-desc-para">Uniformed guard present at night/day</p>
+                      <p className="tile-desc-para">Uniformed personnel layout</p>
                     </div>
                   </div>
 
@@ -407,13 +436,12 @@ function AddListing({ handleLogout }) {
                     <span className="tile-custom-box"></span>
                     <div className="tile-text-content">
                       <h4 className="tile-title-header">Well-lit Paths</h4>
-                      <p className="tile-desc-para">Adequate lighting from gate to room</p>
+                      <p className="tile-desc-para">Adequate pathway light layouts</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Property Media */}
               <div className="wizard-form-card">
                 <div className="card-header-row">
                   <div className="icon-badge-box primary-theme">
@@ -423,13 +451,8 @@ function AddListing({ handleLogout }) {
                 </div>
 
                 <div className="dashed-upload-dropzone" onClick={() => !isUploading && imageInputRef.current.click()}>
-                  <div className="cloud-icon-circle">
-                    <AiOutlineCloudUpload />
-                  </div>
-                  <h3 className="upload-main-title-text">{isUploading ? "Uploading assets to Cloudinary..." : "Click to Upload Property Photos"}</h3>
-                  <p className="upload-constraints-text">Support for JPG, PNG. Max size 5MB per image.</p>
-                  <p className="upload-constraints-text">Minimum 3 photos required (Interior, Exterior, Bathroom).</p>
-
+                  <div className="cloud-icon-circle"><AiOutlineCloudUpload /></div>
+                  <h3 className="upload-main-title-text">{isUploading ? "Uploading to Cloudinary..." : "Click to Add More Photos"}</h3>
                   <input 
                     type="file"
                     multiple
@@ -444,8 +467,9 @@ function AddListing({ handleLogout }) {
 
                 <div className="media-preview-thumbnails-row">
                   {images.map((url, idx) => (
-                    <div key={idx} className="uploaded-thumbnail-box image-filled">
-                      <img src={url} alt={`Property view ${idx + 1}`} />
+                    <div key={idx} className="uploaded-thumbnail-box image-filled" style={{ position: 'relative' }}>
+                      <img src={url} alt={`View ${idx + 1}`} />
+                      {/* Optional Remove button context could be implemented here */}
                     </div>
                   ))}
                   
@@ -457,7 +481,6 @@ function AddListing({ handleLogout }) {
                 </div>
               </div>
 
-              {/* Verification Documents */}
               <div className="wizard-form-card">
                 <div className="card-header-row">
                   <div className="icon-badge-box blue-theme">
@@ -465,56 +488,40 @@ function AddListing({ handleLogout }) {
                   </div>
                   <h2 className="card-header-title">Verification Documents</h2>
                 </div>
-                <p className="verification-section-disclaimer">
-                  These documents are used strictly for internal verification and will not be visible to students.
-                </p>
 
                 <div className="document-upload-twin-grid">
                   <div className="document-action-card">
-                    <div className="doc-meta-heading-row">
-                      <h4 className="doc-type-title">Proof of Ownership</h4>
-                    </div>
+                    <h4 className="doc-type-title">Proof of Ownership</h4>
                     <p className="doc-subtext-description">
-                      {verificationDocs.proofOfOwnership ? "Uploaded Securely" : "Title deed, Lease, or Utility Bill"}
+                      {verificationDocs.proofOfOwnership ? (
+                        <>
+                          <MdUploadFile /> Asset Attached (Click to Replace)
+                        </>
+                      ) : "Title deed, Lease, or Utility Bill"}
                     </p>
-                    <input 
-                      type="file" 
-                      accept=".pdf,image/*" 
-                      ref={proofInputRef} 
-                      style={{ display: "none" }} 
-                      onChange={(e) => handleDocChange(e, "proofOfOwnership")}
-                    />
-                    <button type="button" className="document-outline-select-btn" onClick={() => proofInputRef.current.click()} disabled={isUploading}>
-                      <span className="doc-btn-icon"><MdUploadFile /></span> Choose Document
-                    </button>
+                    <input type="file" accept=".pdf,image/*" ref={proofInputRef} style={{ display: "none" }} onChange={(e) => handleDocChange(e, "proofOfOwnership")} />
+                    <button type="button" className="document-outline-select-btn" onClick={() => proofInputRef.current.click()} disabled={isUploading}>Choose Document</button>
                   </div>
 
                   <div className="document-action-card">
-                    <div className="doc-meta-heading-row">
-                      <h4 className="doc-type-title">ID / Business Registration</h4>
-                    </div>
+                    <h4 className="doc-type-title">ID / Business Registration</h4>
                     <p className="doc-subtext-description">
-                      {verificationDocs.identityDoc ? "Uploaded Securely" : "KRA PIN or National ID Copy"}
+                      {verificationDocs.identityDoc ? (
+                        <>
+                          <MdUploadFile /> Asset Attached (Click to Replace)
+                        </>
+                      ) : "KRA PIN or National ID Copy"}
                     </p>
-                    <input 
-                      type="file" 
-                      accept=".pdf,image/*" 
-                      ref={idInputRef} 
-                      style={{ display: "none" }} 
-                      onChange={(e) => handleDocChange(e, "identityDoc")}
-                    />
-                    <button type="button" className="document-outline-select-btn" onClick={() => idInputRef.current.click()} disabled={isUploading}>
-                      <span className="doc-btn-icon"><MdUploadFile /></span> Choose Document
-                    </button>
+                    <input type="file" accept=".pdf,image/*" ref={idInputRef} style={{ display: "none" }} onChange={(e) => handleDocChange(e, "identityDoc")} />
+                    <button type="button" className="document-outline-select-btn" onClick={() => idInputRef.current.click()} disabled={isUploading}>Choose Document</button>
                   </div>
                 </div>
               </div>
-              
-              {/* Submit button and unsave changes buttons */}
+
               <div className="wizard-form-card form-submit-action">
-                <button type="button" className="form-unsave-action-button">Unsave changes</button>
+                <button type="button" className="form-unsave-action-button" onClick={() => navigate("/dashboard")}>Cancel Changes</button>
                 <button type="submit" className="form-submit-action-button" disabled={isUploading}>
-                  {isUploading ? "Uploading Listing" : "Submit Listing"}
+                  {isUploading ? "Processing..." : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -525,4 +532,4 @@ function AddListing({ handleLogout }) {
   );
 }
 
-export default AddListing;
+export default UpdateListing;
