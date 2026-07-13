@@ -1,9 +1,20 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@mui/material";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation} from "react-router-dom";
 
-function Header() {
+function Header({ isLoggedIn, handleLogout }) {
+  const location = useLocation();
+
+  const landlordPortalPaths = [
+    "/manageproperties",
+    "/dashboard",
+    "/all-listings",
+    "/add-listing",
+    "/login"
+  ];
+
+  const isLandlordPortal = landlordPortalPaths.includes(location.pathname) || location.pathname.startsWith("/edit-property/");
+
   return (
     <>
         <div className='nav'>
@@ -14,7 +25,15 @@ function Header() {
                 <li className="navButton"><NavLink to="/findroommates"><Button>Find Roommates</Button></NavLink></li>
                 <li className="navButton"><NavLink to="/manageproperties"><Button>Manage Properties</Button></NavLink></li>
             </ul>
-            <button className="login-button">Login</button>
+            {!isLandlordPortal && (
+              isLoggedIn ? (
+                <button className="login-button" onClick={handleLogout} style={{ backgroundColor: "#ef4444" }}>
+                  Logout
+                </button>
+              ) : (
+                <button className="login-button">Login</button>
+              )
+            )}
         </div>
     </>
   );
