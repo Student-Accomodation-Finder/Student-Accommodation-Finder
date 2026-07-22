@@ -7,6 +7,7 @@ import { HiMiniArrowsUpDown } from "react-icons/hi2";
 import { MdShield } from "react-icons/md";
 import { PiMapPinAreaBold } from "react-icons/pi";
 import { CiBookmark } from "react-icons/ci";
+import { useNavigate } from "react-router-dom";
 
 const recentlyViewed = [
   { id: 1, title: "Apex Suites", price: "11,000 KES/mo", img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80" },
@@ -20,6 +21,9 @@ const studentFavorites = [
 ];
 
 function FindHousing() {
+
+  const navigate = useNavigate();
+
   const [properties, setProperties] = useState([]);
   
   const [searchInput, setSearchInput] = useState("");
@@ -216,7 +220,7 @@ function FindHousing() {
                     </div>
 
                     <div className="card-actions-footer">
-                      <button className="details-action-btn">View Details</button>
+                      <button className="details-action-btn" onClick={() => navigate(`/property/${listing._id}`)}>View Details</button>
                       <button className="bookmark-action-btn">
                         <CiBookmark className="bookmark-icon" />
                       </button>
