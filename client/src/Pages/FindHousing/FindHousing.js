@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { IoSearch } from "react-icons/io5";
-import { IoIosArrowDown } from "react-icons/io";
 import { MdOutlineVerified } from "react-icons/md";
 import { MdVerified } from "react-icons/md";
 import { RiMap2Line } from "react-icons/ri";
@@ -8,51 +7,6 @@ import { HiMiniArrowsUpDown } from "react-icons/hi2";
 import { MdShield } from "react-icons/md";
 import { PiMapPinAreaBold } from "react-icons/pi";
 import { CiBookmark } from "react-icons/ci";
-
-
-// mock data
-const listingsData = [
-  {
-    id: 1,
-    title: "Blue Sapphire Heights",
-    price: "12,500 KES/mo",
-    safety: "4.8 Safety",
-    location: "5 mins walk from Gate A",
-    verified: true,
-    amenities: ["WiFi", "Instant Shower", "24/7 Guard"],
-    img: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=500&q=80",
-  },
-  {
-    id: 2,
-    title: "Juja Executive Studios",
-    price: "8,000 KES/mo",
-    safety: "4.2 Safety",
-    location: "12 mins walk from Gate C",
-    verified: true,
-    amenities: ["Borehole", "Backup Power"],
-    img: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=500&q=80",
-  },
-  {
-    id: 3,
-    title: "Hostel 101 - Shared",
-    price: "6,500 KES/mo",
-    safety: "4.9 Safety",
-    location: "2 mins walk from Gate B",
-    verified: true,
-    amenities: ["Laundry", "Cafeteria"],
-    img: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=500&q=80",
-  },
-  {
-    id: 4,
-    title: "The Residency Juja",
-    price: "15,000 KES/mo",
-    safety: "4.6 Safety",
-    location: "8 mins walk from Gate A",
-    verified: true,
-    amenities: ["CCTV", "Parking"],
-    img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=500&q=80",
-  },
-];
 
 const recentlyViewed = [
   { id: 1, title: "Apex Suites", price: "11,000 KES/mo", img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80" },
@@ -66,27 +20,119 @@ const studentFavorites = [
 ];
 
 function FindHousing() {
+  const [properties, setProperties] = useState([]);
+  
+  const [searchInput, setSearchInput] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+
+  const [maxPrice, setMaxPrice] = useState("");
+  const [selectedRoomType, setSelectedRoomType] = useState("all");
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch properties from your database
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/api/properties");
+        const json = await response.json();
+        
+        if (json.success) {
+          setProperties(json.data);
+        } else {
+          setError("Failed to fetch properties");
+        }
+      } catch (err) {
+        setError("Error connecting to the server");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setActiveSearch(searchInput);
+  };
+
+  const filteredListings = properties.filter((property) => {
+
+    const query = activeSearch.toLowerCase().trim();
+    const matchesName = property.propertyName?.toLowerCase().includes(query);
+    const matchesLocation = property.location?.toLowerCase().includes(query);
+    const matchesSearch = !query || matchesName || matchesLocation;
+
+    const roomTypeString = (property.roomType || property.propertyName || "").toLowerCase();
+    const matchesRoom = selectedRoomType === "all" || roomTypeString.includes(selectedRoomType.toLowerCase());
+
+    const numericPrice = typeof property.price === "number" 
+      ? property.price 
+      : parseInt(String(property.price || 0).replace(/[^0-9]/g, ""), 10) || 0;
+    const matchesPrice = !maxPrice || numericPrice <= Number(maxPrice);
+
+    const matchesVerified = !verifiedOnly || property.status === "verified";
+
+    return matchesSearch && matchesRoom && matchesPrice && matchesVerified;
+  });
+
   return (
     <div className="search-page-container">
-      <div className="breadcrumb-area">
-        <span className="breadcrumb-text">Search Results - JKUAT Area</span>
-      </div>
 
-      {/* Search & Filters Dashboard Panel */}
       <div className="search-control-panel">
-        <div className="search-input-wrapper">
+        <form onSubmit={handleSearch} className="search-input-wrapper">
           <IoSearch className="panel-icon" />
-          <input type="text" defaultValue="Search near JKUAT, Juja..." className="panel-search-input" />
-          <button className="panel-search-btn">Search</button>
-        </div>
+          <input 
+            type="text" 
+            placeholder="Search by property name or location near JKUAT..." 
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="panel-search-input" 
+          />
+          <button type="submit" className="panel-search-btn">Search</button>
+        </form>
         
         <div className="filters-row-wrapper">
           <div className="filter-pills-group">
-            <button className="filter-pill dropdown">Price: 5k - 20k KES <IoIosArrowDown className="filters-icons"/></button>
-            <button className="filter-pill dropdown">Room: Bed-sitter <IoIosArrowDown className="filters-icons"/></button>
-            <button className="filter-pill dropdown">Safety: 4.0+ <IoIosArrowDown className="filters-icons"/></button>
-            <button className="filter-pill active"><MdOutlineVerified className="filters-icons" />Verified Only</button>
+            <select 
+              value={maxPrice} 
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="filter-pill dropdown"
+              style={{ cursor: "pointer", border: "none", outline: "none", background: "transparent" }}
+            >
+              <option value="">Price: All KES</option>
+              <option value="5000">Max: 5,000 KES</option>
+              <option value="10000">Max: 10,000 KES</option>
+              <option value="15000">Max: 15,000 KES</option>
+              <option value="20000">Max: 20,000 KES</option>
+            </select>
+
+            <select 
+              value={selectedRoomType} 
+              onChange={(e) => setSelectedRoomType(e.target.value)}
+              className="filter-pill dropdown"
+              style={{ cursor: "pointer", border: "none", outline: "none", background: "transparent" }}
+            >
+              <option value="all">Room: All Types</option>
+              <option value="bedsitter">Bed-sitter</option>
+              <option value="single">Single Room</option>
+              <option value="1 bedroom">1 Bedroom</option>
+              <option value="2 bedroom">2 Bedroom</option>
+            </select>
+
+            <button 
+              type="button"
+              className={`filter-pill ${verifiedOnly ? "active" : ""}`}
+              onClick={() => setVerifiedOnly(!verifiedOnly)}
+            >
+              <MdOutlineVerified className="filters-icons" />
+              {verifiedOnly ? "Verified Only ✓" : "Verified Only"}
+            </button>
           </div>
+
           <button className="map-toggle-btn">
             <RiMap2Line className="map-icon" />
             Show Map
@@ -95,66 +141,98 @@ function FindHousing() {
       </div>
 
       <div className="search-results-layout">        
-        {/* Results Counter & Listing Grid */}
         <div className="listings-column-left">
           <div className="results-meta-header">
-            <h3 className="results-count-title">32 Results near JKUAT</h3>
+            <h3 className="results-count-title">{filteredListings.length} Results Found</h3>
             <button className="sort-dropdown-trigger">
               Sort by: Recommended 
               <HiMiniArrowsUpDown className="sort-icon" />
             </button>
           </div>
 
-          <div className="search-listings-grid">
-            {listingsData.map((listing) => (
-              <div key={listing.id} className="search-listing-card">
-                <div className="card-image-container">
-                  <img src={listing.img} alt={listing.title} className="card-main-img" />
-                  <span className="card-price-tag">{listing.price}</span>
-                  <span className="card-safety-badge"><MdShield className="card-safety-badge-icon"/> {listing.safety}</span>
-                  <div className="card-dots-indicator">
-                    <span className="dot active"></span>
-                    <span className="dot"></span>
-                    <span className="dot"></span>
+          {loading && <p>Loading housing choices...</p>}
+          {error && <p style={{ color: "red" }}>{error}</p>}
+
+          {!loading && !error && (
+            <div className="search-listings-grid">
+              {filteredListings.map((listing) => (
+                <div key={listing._id} className="search-listing-card">
+                  <div className="card-image-container">
+                    <img 
+                      src={listing.images && listing.images.length > 0 ? listing.images[0] : "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=500&q=80"} 
+                      alt={listing.propertyName} 
+                      className="card-main-img" 
+                    />
+                    <span className="card-price-tag">{listing.price} KES/mo</span>
+                    <span className="card-safety-badge">
+                      <MdShield className="card-safety-badge-icon"/>{" "}
+                      {typeof listing.safety === "object" && listing.safety !== null ? (
+                        `${Object.values(listing.safety).filter(Boolean).length} Verified Specs`
+                      ) : typeof listing.amenities === "object" && listing.amenities !== null ? (
+                        `${Object.values(listing.amenities).filter(Boolean).length} Secure Specs`
+                      ) : (
+                        `${listing.safety || "4.5"} Safety`
+                      )}
+                    </span>
+                    <div className="card-dots-indicator">
+                      <span className="dot active"></span>
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                    </div>
+                  </div>
+
+                  <div className="card-body-content">
+                    <div className="card-title-row">
+                      <h4 className="card-main-title">{listing.propertyName}</h4>
+                      {listing.status === "verified" && (
+                        <span className="card-verified-lbl">
+                          <MdVerified className="checkmark-icon" />
+                          Verified
+                        </span>
+                      )}
+                    </div>
+                    <p className="card-location-text">
+                      <PiMapPinAreaBold className="card-location-text-icon"/> {listing.location} ({listing.distance || "0"} mins away)
+                    </p>
+                    
+                    <hr className="card-inner-divider" />
+                    
+                    <div className="card-amenities-row">
+                      {Array.isArray(listing.amenities) ? (
+                        listing.amenities.map((amenity, i) => (
+                          <span key={i} className="amenity-tag-pill">{amenity}</span>
+                        ))
+                      ) : typeof listing.amenities === "object" && listing.amenities !== null ? (
+                        Object.entries(listing.amenities)
+                          .filter(([_, value]) => value === true || value === "true")
+                          .map(([key], i) => (
+                            <span key={i} className="amenity-tag-pill">
+                              {key === "cctv" ? "CCTV Camera" : key.charAt(0).toUpperCase() + key.slice(1)}
+                            </span>
+                          ))
+                      ) : (
+                        <span className="amenity-tag-pill empty">Standard Amenities</span>
+                      )}
+                    </div>
+
+                    <div className="card-actions-footer">
+                      <button className="details-action-btn">View Details</button>
+                      <button className="bookmark-action-btn">
+                        <CiBookmark className="bookmark-icon" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="card-body-content">
-                  <div className="card-title-row">
-                    <h4 className="card-main-title">{listing.title}</h4>
-                    {listing.verified && (
-                      <span className="card-verified-lbl">
-                        <MdVerified className="checkmark-icon" />
-                        Verified
-                      </span>
-                    )}
-                  </div>
-                  <p className="card-location-text"><PiMapPinAreaBold className="card-location-text-icon"/> {listing.location}</p>
-                  
-                  <hr className="card-inner-divider" />
-                  
-                  <div className="card-amenities-row">
-                    {listing.amenities.map((amenity, i) => (
-                      <span key={i} className="amenity-tag-pill">{amenity}</span>
-                    ))}
-                  </div>
-
-                  <div className="card-actions-footer">
-                    <button className="details-action-btn">View Details</button>
-                    <button className="bookmark-action-btn">
-                      <CiBookmark className="bookmark-icon" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Informational Context Sidebar */}
-        <div className="sidebar-column-right">
+              ))}
+            </div>
+          )}
           
-          {/* Recently Viewed */}
+          {!loading && filteredListings.length === 0 && (
+            <p>No listings match your search criteria.</p>
+          )}
+        </div>
+        
+        <div className="sidebar-column-right">
           <div className="sidebar-widget-card">
             <h4 className="widget-header-title">Recently Viewed</h4>
             <div className="recently-viewed-list">
@@ -171,7 +249,6 @@ function FindHousing() {
             </div>
           </div>
 
-          {/* Safety First Callout Banner */}
           <div className="sidebar-safety-banner">
             <h4 className="safety-banner-title">Safety First</h4>
             <p className="safety-banner-body">
@@ -180,7 +257,6 @@ function FindHousing() {
             <button className="safety-banner-btn">Learn about Safety</button>
           </div>
 
-          {/* Student Favorites Pill list */}
           <div className="sidebar-widget-card">
             <h4 className="widget-header-title">Student Favorites</h4>
             <div className="favorites-pills-list">
