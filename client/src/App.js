@@ -10,6 +10,7 @@ import AddListing from './Pages/LandlordPortal/AddListing';
 import Listings from './Pages/LandlordPortal/Listings';
 import UpdateListing from './Pages/LandlordPortal/UpdateListing';
 import Login from './Pages/LandlordPortal/Login'; 
+import PropertyDetails from './Pages/PropertyDetails/PropertyDetails';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -50,6 +51,7 @@ function App() {
         <Route path="all-listings" exact={true} element={<GuardedRoute element={<Listings handleLogout={handleLogout}/>} />} />
         <Route path="/add-listing" exact={true} element={<GuardedRoute element={<AddListing handleLogout={handleLogout}/>} />} />
         <Route path="/edit-property/:id" exact={true} element={<GuardedRoute element={<UpdateListing handleLogout={handleLogout}/>} />} />
+        <Route path="/property/:id" element={<PropertyDetails />} />
       </Routes>
       
       <Footer />
