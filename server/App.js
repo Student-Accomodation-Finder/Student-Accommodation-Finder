@@ -13,8 +13,13 @@ app.use(express.json());
 
 //routes
 const propertyRoutes = require('./routes/propertyRoutes');
+const roommateRoutes = require('./routes/roommates');
 
 app.use('/api/properties', propertyRoutes);
+app.use('/api/roommates', roommateRoutes);
+app.get('/api/test', (req, res) => {
+  res.json({ ok: true });
+});
 
 // database
 mongoose.connect(process.env.CONNECTION_STRING)

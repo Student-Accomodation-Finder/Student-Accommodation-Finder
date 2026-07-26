@@ -11,6 +11,7 @@ import Listings from './Pages/LandlordPortal/Listings';
 import UpdateListing from './Pages/LandlordPortal/UpdateListing';
 import Login from './Pages/LandlordPortal/Login'; 
 import PropertyDetails from './Pages/PropertyDetails/PropertyDetails';
+import RoommateMatching from './Pages/Findroommates/Findroommates';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -38,7 +39,8 @@ function App() {
         {/* Public Routes */}
         <Route path="/" exact={true} element={<Home />} />
         <Route path="/findhousing" exact={true} element={<FindHousing />} />
-        
+        <Route path="/findroommates" exact={true} element={<RoommateMatching />} />
+
         {/* Route pointing directly to dashboard */}
         <Route 
           path="/login" 

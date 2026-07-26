@@ -1,6 +1,4 @@
 import React from "react";
-import Header from '../../Components/Header';
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { VscWorkspaceTrusted } from "react-icons/vsc";
 import { FiShield, FiMap, FiUsers, FiChevronLeft, FiChevronRight, FiWifi, FiLock } from "react-icons/fi"; 
 import { IoSearch } from "react-icons/io5";
