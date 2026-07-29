@@ -11,6 +11,7 @@ import Listings from './Pages/LandlordPortal/Listings';
 import UpdateListing from './Pages/LandlordPortal/UpdateListing';
 import Login from './Pages/LandlordPortal/Login'; 
 import PropertyDetails from './Pages/PropertyDetails/PropertyDetails';
+import NestorAI from './Pages/NestorAI/NestorAI';
 import RoommateMatching from './Pages/Findroommates/Findroommates';
 
 function App() {
@@ -40,7 +41,7 @@ function App() {
         <Route path="/" exact={true} element={<Home />} />
         <Route path="/findhousing" exact={true} element={<FindHousing />} />
         <Route path="/findroommates" exact={true} element={<RoommateMatching />} />
-
+        
         {/* Route pointing directly to dashboard */}
         <Route 
           path="/login" 
@@ -54,6 +55,7 @@ function App() {
         <Route path="/add-listing" exact={true} element={<GuardedRoute element={<AddListing handleLogout={handleLogout}/>} />} />
         <Route path="/edit-property/:id" exact={true} element={<GuardedRoute element={<UpdateListing handleLogout={handleLogout}/>} />} />
         <Route path="/property/:id" element={<PropertyDetails />} />
+        <Route path="/ai-assistant" element={<NestorAI />} />
       </Routes>
       
       <Footer />
