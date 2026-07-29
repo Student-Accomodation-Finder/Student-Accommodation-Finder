@@ -24,6 +24,7 @@ function Header({ isLoggedIn, handleLogout }) {
                 <li className="navButton"><NavLink to="/findhousing"><Button>Find Housing</Button></NavLink></li>
                 <li className="navButton"><NavLink to="/findroommates"><Button>Find Roommates</Button></NavLink></li>
                 <li className="navButton"><NavLink to="/manageproperties"><Button>Manage Properties</Button></NavLink></li>
+                <li className="navButton"><NavLink to="/ai-assistant"><Button>NestorAI</Button></NavLink></li>
             </ul>
             {!isLandlordPortal && (
               isLoggedIn ? (
