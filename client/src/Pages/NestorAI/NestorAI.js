@@ -81,7 +81,7 @@ function NestorAI() {
 
   return (
     <div className="ai-chat-page-container">
-      {/* Header Banner */}
+
       <div className="ai-chat-header">
         <div className="ai-header-info">
           <div className="ai-avatar-badge">
@@ -94,7 +94,6 @@ function NestorAI() {
         </div>
       </div>
 
-      {/* Main Chat Container */}
       <div className="ai-chat-box">
         <div className="messages-scroll-area">
           {messages.map((msg, index) => (
@@ -115,7 +114,6 @@ function NestorAI() {
             </div>
           ))}
 
-          {/* Typing Indicator */}
           {loading && (
             <div className="message-row ai">
               <div className="message-avatar"><RiRobot2Line /></div>
@@ -127,7 +125,6 @@ function NestorAI() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Quick Suggestion Pills */}
         <div className="quick-prompts-container">
           <span className="quick-title">Suggested:</span>
           <div className="quick-prompts-scroll">
